@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs.  All rights reserved.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <tinyhal.h>
@@ -131,7 +132,7 @@ const HAL_CONFIG_BLOCK* HAL_CONFIG_BLOCK::Find( const char* Name, BOOL fSkipCurr
 BOOL HAL_CONFIG_BLOCK::GetConfigSectorAddress(HAL_CONFIG_BLOCK_STORAGE_DATA& blData)
 {
 
-#if defined(HAL_REDUCESIZE)
+#if defined(HAL_REDUCESIZE) && !(defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase))
     // No config update.
     return FALSE;
 #else
@@ -405,7 +406,7 @@ BOOL HAL_CONFIG_BLOCK::ApplyConfig( const char* Name, void* Address, size_t Leng
 
 BOOL HAL_CONFIG_BLOCK::ApplyConfig( const char* Name, void* Address, size_t Length, void** newAlloc )
 {
-#if defined(HAL_REDUCESIZE)
+#if defined(HAL_REDUCESIZE) && !(defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase))
     // No config update.
     return FALSE;
 #else

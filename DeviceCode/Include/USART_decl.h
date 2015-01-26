@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef _DRIVERS_USART_DECL_H_
@@ -80,6 +81,9 @@ void USART_ForceXON( int ComPortNum );
 void USART_CloseAllPorts();
 int  USART_BytesInBuffer( int ComPortNum, BOOL fRx );
 void USART_DiscardBuffer( int ComPortNum, BOOL fRx );
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+void USART_SetDataEventRaised( int ComPortNum );
+#endif
 BOOL USART_ConnectEventSink( int ComPortNum, int EventType, void* pContext, PFNUsartEvent pfnUsartEvtHandler, void** ppArg );
 void USART_SetEvent( int ComPortNum, unsigned int event );
 

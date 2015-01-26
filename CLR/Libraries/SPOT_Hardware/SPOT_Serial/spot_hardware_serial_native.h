@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -49,7 +50,9 @@ struct Library_spot_hardware_serial_native_System_IO_Ports_SerialPort
     TINYCLR_NATIVE_DECLARE(InternalDispose___VOID);
     TINYCLR_NATIVE_DECLARE(BytesInBuffer___I4__BOOLEAN);
     TINYCLR_NATIVE_DECLARE(DiscardBuffer___VOID__BOOLEAN);
-
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+    TINYCLR_NATIVE_DECLARE(InternalSetDataEventRaised___VOID);
+#endif
     //--//
 
 };

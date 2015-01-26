@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "usart.h"
@@ -82,6 +83,13 @@ void USART_DiscardBuffer( int ComPortNum, BOOL fRx )
 {
     USART_Driver::DiscardBuffer( ComPortNum, fRx );
 }
+
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+void USART_SetDataEventRaised( int ComPortNum ) 
+{
+    USART_Driver::SetDataEventRaised( ComPortNum );
+}
+#endif
 
 BOOL USART_ConnectEventSink( int ComPortNum, int EventType, void *pContext, PFNUsartEvent pfnUsartEvtHandler, void **ppArg )
 {
@@ -394,13 +402,16 @@ int USART_Driver::Read( int ComPortNum, char* Data, size_t size )
 
     {
         GLOBAL_LOCK(irq);
-     
+
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+#else
         State.fDataEventSet  = FALSE;        
 
         if(!State.RxQueue.IsEmpty())
         {
             SetEvent( ComPortNum, USART_EVENT_DATA_CHARS );
         }
+#endif
      }
 
     return CharsRead;
@@ -774,6 +785,21 @@ void USART_Driver::DiscardBuffer( int ComPortNum, BOOL fRx )
         }        
     }
 }
+
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+void USART_Driver::SetDataEventRaised( int ComPortNum )
+{
+    if((ComPortNum < 0) || (ComPortNum >= TOTAL_USART_PORT)) return;
+
+    HAL_USART_STATE& State = Hal_Usart_State[ComPortNum];
+
+    {
+        GLOBAL_LOCK(irq);
+
+        State.fDataEventSet  = FALSE;        
+    }
+}
+#endif
 
 BOOL USART_Driver::ConnectEventSink( int ComPortNum, int EventType, void* pContext, PFNUsartEvent pfnUsartEvtHandler, void** ppArg )
 {

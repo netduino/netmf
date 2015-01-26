@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "SPOT_Hardware_serial.h"
@@ -166,7 +167,23 @@ HRESULT Library_spot_hardware_serial_native_System_IO_Ports_SerialPort::Read___I
         {
             stack.m_evalStack[ 1 ].NumericByRef().s4 = totRead;
 
-            TINYCLR_CHECK_HRESULT(g_CLR_RT_ExecutionEngine.WaitEvents( stack.m_owningThread, *timeoutTicks, CLR_RT_ExecutionEngine::c_Event_SerialPort, fRes ));
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+            // if we have received any data, we should return it now.  This is consistent with the other .NET frameworks
+            if (totRead > 0)
+            {
+                fRes = false;
+            }
+            else
+            {
+#endif
+                TINYCLR_CHECK_HRESULT(g_CLR_RT_ExecutionEngine.WaitEvents( stack.m_owningThread, *timeoutTicks, CLR_RT_ExecutionEngine::c_Event_SerialPort, fRes ));
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+                if (!fRes) 
+                {
+                    TINYCLR_SET_AND_LEAVE(CLR_E_TIMEOUT);
+                }
+            }
+#endif
         }
         else if(read < 0)
         {
@@ -274,6 +291,12 @@ HRESULT Library_spot_hardware_serial_native_System_IO_Ports_SerialPort::Write___
             stack.m_evalStack[ 1 ].NumericByRef().s4 = totWrite;
 
             TINYCLR_CHECK_HRESULT(g_CLR_RT_ExecutionEngine.WaitEvents( stack.m_owningThread, *timeoutTicks, CLR_RT_ExecutionEngine::c_Event_SerialPort, fRes ));
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+            if (!fRes) 
+            {
+                TINYCLR_SET_AND_LEAVE(CLR_E_TIMEOUT);
+            }
+#endif
         }
         else if(write < 0)
         {
@@ -404,3 +427,31 @@ HRESULT Library_spot_hardware_serial_native_System_IO_Ports_SerialPort::DiscardB
 
     TINYCLR_NOCLEANUP();
 }
+
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+HRESULT Library_spot_hardware_serial_native_System_IO_Ports_SerialPort::InternalSetDataEventRaised___VOID( CLR_RT_StackFrame& stack )
+{
+    NATIVE_PROFILE_CLR_HARDWARE();
+    TINYCLR_HEADER();
+    
+    CLR_RT_HeapBlock* pThis;
+    CLR_RT_HeapBlock* config;
+    CLR_UINT32        portId;
+
+    pThis = stack.This();  FAULT_ON_NULL(pThis);   
+
+    // check if the object was disposed
+    if(pThis[ FIELD__m_fDisposed ].NumericByRef().s1 != 0) 
+    {
+        TINYCLR_SET_AND_LEAVE(CLR_E_OBJECT_DISPOSED);
+    }
+
+    config = pThis[ FIELD__m_config ].Dereference(); FAULT_ON_NULL(config);
+
+    portId = config[ Library_spot_hardware_serial_native_System_IO_Ports_SerialPort__Configuration::FIELD__PortIndex ].NumericByRef().u4;
+
+    ::USART_SetDataEventRaised( portId );
+
+    TINYCLR_NOCLEANUP();
+}
+#endif
