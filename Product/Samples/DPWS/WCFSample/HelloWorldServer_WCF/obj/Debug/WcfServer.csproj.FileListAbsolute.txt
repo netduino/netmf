@@ -1,0 +1,5 @@
+d:\SD\current\client_v4_3_dev\Product\Samples\DPWS\WCFSample\HelloWorldServer_WCF\bin\WcfServer.exe
+d:\SD\current\client_v4_3_dev\Product\Samples\DPWS\WCFSample\HelloWorldServer_WCF\bin\WcfServer.pdb
+d:\SD\current\client_v4_3_dev\Product\Samples\DPWS\WCFSample\HelloWorldServer_WCF\obj\Debug\WcfServer.exe
+d:\SD\current\client_v4_3_dev\Product\Samples\DPWS\WCFSample\HelloWorldServer_WCF\obj\Debug\WcfServer.pdb
+D:\SD\current\client_v4_3_dev\Product\Samples\DPWS\WCFSample\HelloWorldServer_WCF\obj\Debug\WcfServer.csprojResolveAssemblyReference.cache
