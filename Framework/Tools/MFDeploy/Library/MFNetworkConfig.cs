@@ -57,6 +57,8 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool.Engine
         MFConfigHelper           m_cfgHelper;
 
         const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCP             = 1;
+        const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_DYNAMIC_DNS      = 2;
+        const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_EXTENDED         = 32768;
         const uint c_SOCK_NETWORKCONFIGURATION_INTERFACETYPE_ETHERNET = 6;
 
         const string c_CfgName = "NETWORK";
@@ -69,15 +71,37 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool.Engine
             m_cfgHelper = new MFConfigHelper(dev);
         }
 
-        public bool EnableDhcp 
+        public bool EnableDhcpForIpAddress
         { 
             get { return (m_cfg.flags & c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCP) != 0; } 
             set 
             {
-                uint hiBits = m_cfg.flags & 0xFFFF0000;
+                uint savedBits = m_cfg.flags & ~c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCP;
                 m_cfg.flags = value ? c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCP : 0;
-                m_cfg.flags |= hiBits; /// Keep this same.
+                m_cfg.flags |= savedBits; /// Keep this same.
             } 
+        }
+
+        public bool EnableDhcpForDnsAddresses
+        {
+            get { return (m_cfg.flags & c_SOCK_NETWORKCONFIGURATION_FLAGS_DYNAMIC_DNS) != 0;  }
+            set
+            {
+                uint savedBits = m_cfg.flags & ~c_SOCK_NETWORKCONFIGURATION_FLAGS_DYNAMIC_DNS;
+                m_cfg.flags = value ? c_SOCK_NETWORKCONFIGURATION_FLAGS_DYNAMIC_DNS : 0;
+                m_cfg.flags |= savedBits; /// Keep this same.
+            }
+        }
+
+        public bool EnableExtendedConfiguration
+        {
+            get { return (m_cfg.flags & c_SOCK_NETWORKCONFIGURATION_FLAGS_EXTENDED) != 0;  }
+            set
+            {
+                uint savedBits = m_cfg.flags & ~c_SOCK_NETWORKCONFIGURATION_FLAGS_EXTENDED;
+                m_cfg.flags = value ? c_SOCK_NETWORKCONFIGURATION_FLAGS_EXTENDED : 0;
+                m_cfg.flags |= savedBits; /// Keep this same.
+            }
         }
 
         public IPAddress IpAddress
@@ -244,6 +268,312 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool.Engine
         {
             m_cfg.NetworkCount = 1;
             m_cfg.Enabled = 1;            
+            m_cfgHelper.WriteConfig(c_CfgName, m_cfg);
+        }
+
+        internal void SwapConfigBuffer(MFConfigHelper srcConfig)
+        {
+            m_cfgHelper.SwapAllConfigData(srcConfig);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct HAL_NetworkConfigurationExtended : IHAL_CONFIG_BASE
+    {
+        public const int c_ipv6AddrLength = 16;
+
+        public HAL_CONFIG_BLOCK Header;
+        public Int32 NetworkCount;
+        public Int32 Enabled;
+        public UInt32 flags;
+        public fixed byte ipv6ipaddr[c_ipv6AddrLength];
+        public byte ipv6subnetprefixlen;
+        public fixed byte ipv6gateway[c_ipv6AddrLength];
+        public fixed byte ipv6dnsserver1[c_ipv6AddrLength];
+        public fixed byte ipv6dnsserver2[c_ipv6AddrLength];
+
+        public HAL_CONFIG_BLOCK ConfigHeader
+        {
+            get { return Header; }
+            set { Header = value; }
+        }
+
+        public int Size
+        {
+            get
+            {
+                int size = 0;
+
+                unsafe
+                {
+                    size = sizeof(HAL_NetworkConfigurationExtended);
+                }
+
+                return size;
+            }
+        }
+    }
+
+    public class MFNetworkConfigurationExtended
+    {
+        HAL_NetworkConfigurationExtended m_cfg = new HAL_NetworkConfigurationExtended();
+        MFConfigHelper m_cfgHelper;
+
+        const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_IPADDR   = 1;
+        const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_DNSADDRS = 2;
+        /* NOTE: IPv4-only == IPv4 stack; IPv6-only == IPv6 stack; IPv4 | IPv6 == Dual IPv4+IPv6 stack */
+        const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV4_SUPPORTED = 4;
+        const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV6_SUPPORTED  = 8;
+
+        const string c_CfgName = "NETWORKEXT";
+
+        public MFNetworkConfigurationExtended(MFDevice dev)
+        {
+            /* load default settings, in case extended settinsg are not available */
+            m_cfg.flags = c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV4_SUPPORTED; // default setting for backwards compatibility
+            this.IPv6IpAddress = new IPAddress(new byte[16]);
+            this.IPv6Gateway = new IPAddress(new byte[16]);
+            this.IPv6SubnetPrefixLength = 0;
+            this.IPv6PrimaryDns = new IPAddress(new byte[16]);
+            this.IPv6SecondaryDns = new IPAddress(new byte[16]);
+
+            m_cfgHelper = new MFConfigHelper(dev);
+        }
+
+        public bool EnableDhcpForIPv6IpAddress
+        {
+            get { return (m_cfg.flags & c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_IPADDR) != 0; }
+            set
+            {
+                uint savedBits = m_cfg.flags & ~c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_IPADDR;
+                m_cfg.flags = value ? c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_IPADDR : 0;
+                m_cfg.flags |= savedBits; /// Keep this same.
+            }
+        }
+
+        public bool EnableDhcpForIPv6DnsAddresses
+        {
+            get { return (m_cfg.flags & c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_DNSADDRS) != 0; }
+            set
+            {
+                uint savedBits = m_cfg.flags & ~c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_DNSADDRS;
+                m_cfg.flags = value ? c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_DNSADDRS : 0;
+                m_cfg.flags |= savedBits; /// Keep this same.
+            }
+        }
+
+        public bool EnableIPv4
+        {
+            get { return (m_cfg.flags & c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV4_SUPPORTED) != 0; }
+            set
+            {
+                uint savedBits = m_cfg.flags & ~c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV4_SUPPORTED;
+                m_cfg.flags = value ? c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV4_SUPPORTED : 0;
+                m_cfg.flags |= savedBits; /// Keep this same.
+            }
+        }
+
+        public bool EnableIPv6
+        {
+            get { return (m_cfg.flags & c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV6_SUPPORTED) != 0; }
+            set
+            {
+                uint savedBits = m_cfg.flags & ~c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV6_SUPPORTED;
+                m_cfg.flags = value ? c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV6_SUPPORTED : 0;
+                m_cfg.flags |= savedBits; /// Keep this same.
+            }
+        }
+
+        public IPAddress IPv6IpAddress
+        {
+            get
+            {
+                uint len = HAL_NetworkConfigurationExtended.c_ipv6AddrLength;
+
+                byte[] data = new byte[len];
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6ipaddr)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            data[i] = pData[i];
+                        }
+                    }
+                }
+                return new IPAddress(data); 
+            }
+            set
+            {
+                if (value.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6)
+                {
+                    throw new MFInvalidNetworkAddressException();
+                }
+
+                byte[] valueBytes = value.GetAddressBytes();
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6ipaddr)
+                    {
+                        for (int i = 0; i < valueBytes.Length; i++)
+                        {
+                            pData[i] = valueBytes[i];
+                        }
+                    }
+                }
+            }
+        }
+        public byte IPv6SubnetPrefixLength
+        {
+            get
+            {
+                return m_cfg.ipv6subnetprefixlen;
+            }
+            set
+            {
+                m_cfg.ipv6subnetprefixlen = value;
+            }
+        }
+        public IPAddress IPv6Gateway
+        {
+            get
+            {
+                uint len = HAL_NetworkConfigurationExtended.c_ipv6AddrLength;
+
+                byte[] data = new byte[len];
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6gateway)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            data[i] = pData[i];
+                        }
+                    }
+                }
+                return new IPAddress(data);
+            }
+            set
+            {
+                if (value.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6)
+                {
+                    throw new MFInvalidNetworkAddressException();
+                }
+
+                byte[] valueBytes = value.GetAddressBytes();
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6gateway)
+                    {
+                        for (int i = 0; i < valueBytes.Length; i++)
+                        {
+                            pData[i] = valueBytes[i];
+                        }
+                    }
+                }
+            }
+        }
+        public IPAddress IPv6PrimaryDns
+        {
+            get
+            {
+                uint len = HAL_NetworkConfigurationExtended.c_ipv6AddrLength;
+
+                byte[] data = new byte[len];
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6dnsserver1)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            data[i] = pData[i];
+                        }
+                    }
+                }
+                return new IPAddress(data);
+            }
+            set
+            {
+                if (value.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6)
+                {
+                    throw new MFInvalidNetworkAddressException();
+                }
+
+                byte[] valueBytes = value.GetAddressBytes();
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6dnsserver1)
+                    {
+                        for (int i = 0; i < valueBytes.Length; i++)
+                        {
+                            pData[i] = valueBytes[i];
+                        }
+                    }
+                }
+            }
+        }
+        public IPAddress IPv6SecondaryDns
+        {
+            get
+            {
+                uint len = HAL_NetworkConfigurationExtended.c_ipv6AddrLength;
+
+                byte[] data = new byte[len];
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6dnsserver2)
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            data[i] = pData[i];
+                        }
+                    }
+                }
+                return new IPAddress(data);
+            }
+            set
+            {
+                if (value.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6)
+                {
+                    throw new MFInvalidNetworkAddressException();
+                }
+
+                byte[] valueBytes = value.GetAddressBytes();
+
+                unsafe
+                {
+                    fixed (byte* pData = m_cfg.ipv6dnsserver2)
+                    {
+                        for (int i = 0; i < valueBytes.Length; i++)
+                        {
+                            pData[i] = valueBytes[i];
+                        }
+                    }
+                }
+            }
+        }
+
+        public void Load()
+        {
+            byte[] data = m_cfgHelper.FindConfig(c_CfgName);
+
+            if (data != null)
+            {
+                m_cfg = (HAL_NetworkConfigurationExtended)MFConfigHelper.UnmarshalData(data, typeof(HAL_NetworkConfigurationExtended));
+            }
+        }
+
+        public void Save()
+        {
+            m_cfg.NetworkCount = 1;
+            m_cfg.Enabled = 1;
             m_cfgHelper.WriteConfig(c_CfgName, m_cfg);
         }
 

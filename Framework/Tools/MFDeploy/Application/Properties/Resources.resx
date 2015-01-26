@@ -542,4 +542,7 @@ Copyright (c) 2007 Microsoft Corporation All rights reserved.</value>
   <data name="TransportWinUsb" xml:space="preserve">
     <value>WINUSB</value>
   </data>
+  <data name="SubnetPrefixLength" xml:space="preserve">
+    <value>Subnet Prefix Length</value>
+  </data>
 </root>

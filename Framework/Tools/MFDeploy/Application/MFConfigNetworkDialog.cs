@@ -19,12 +19,14 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
     internal partial class MFNetworkConfigDialog : Form
     {
         MFNetworkConfiguration m_cfg;
+        MFNetworkConfigurationExtended m_cfgExt;
         MFWirelessConfiguration m_wirelessCfg;
         MFConfigHelper m_cfgHelper;
 
         public MFNetworkConfigDialog(MFDevice device)
         {
             m_cfg = new MFNetworkConfiguration(device);
+            m_cfgExt = new MFNetworkConfigurationExtended(device);
             m_cfgHelper = new MFConfigHelper(device);
             m_wirelessCfg = new MFWirelessConfiguration(device);
 
@@ -72,13 +74,33 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
 
             m_cfgHelper.MaintainConnection = true;
 
-            textBoxIPAddress.Text       = m_cfg.IpAddress.ToString();
-            textBoxSubnetMask.Text      = m_cfg.SubNetMask.ToString();
-            textBoxDefaultGateway.Text  = m_cfg.Gateway.ToString();
-            checkBoxDHCPEnable.Checked  = m_cfg.EnableDhcp;
-            textBoxDnsPrimary.Text      = m_cfg.PrimaryDns.ToString();
-            textBoxDnsSecondary.Text    = m_cfg.SecondaryDns.ToString();
-            textBoxMACAddress.Text      = MacToDashedHex(m_cfg.MacAddress);
+            textBoxIPv4IPAddress.Text                   = m_cfg.IpAddress.ToString();
+            textBoxIPv4SubnetMask.Text                  = m_cfg.SubNetMask.ToString();
+            textBoxIPv4DefaultGateway.Text              = m_cfg.Gateway.ToString();
+            radioButtonIPv4IPAddressDynamic.Checked     = m_cfg.EnableDhcpForIpAddress;
+            radioButtonIPv4DnsAddressesDynamic.Checked  = m_cfg.EnableDhcpForDnsAddresses;
+            textBoxIPv4DnsPrimary.Text                  = m_cfg.PrimaryDns.ToString();
+            textBoxIPv4DnsSecondary.Text                = m_cfg.SecondaryDns.ToString();
+            textBoxMACAddress.Text                      = MacToDashedHex(m_cfg.MacAddress);
+
+            if (m_cfg.EnableExtendedConfiguration)
+            {
+                m_cfgExt.Load();
+                if (m_cfgExt.EnableIPv6)
+                {
+                    textBoxIPv6IPAddress.Text                  = m_cfgExt.IPv6IpAddress.ToString();
+                    textBoxIPv6SubnetPrefixLength.Text         = m_cfgExt.IPv6SubnetPrefixLength.ToString();
+                    textBoxIPv6DefaultGateway.Text             = m_cfgExt.IPv6Gateway.ToString();
+                    radioButtonIPv6IPAddressDynamic.Checked    = m_cfgExt.EnableDhcpForIPv6IpAddress;
+                    radioButtonIPv6DnsAddressesDynamic.Checked = m_cfgExt.EnableDhcpForIPv6DnsAddresses;
+                    textBoxIPv6DnsPrimary.Text                 = m_cfgExt.IPv6PrimaryDns.ToString();
+                    textBoxIPv6DnsSecondary.Text               = m_cfgExt.IPv6SecondaryDns.ToString();
+                }
+            }
+            else
+            {
+                tabControlIPSettings.Controls.Remove(tabPageIPv6);
+            }
 
             if (m_cfg.ConfigurationType == MFNetworkConfiguration.NetworkConfigType.Wireless)
             {
@@ -114,10 +136,10 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
         }
 
 
-        private bool CheckDecimalToIp(string name, TextBox tb, out IPAddress ip)
+        private bool CheckStringToIpAddress(string name, TextBox tb, out IPAddress ip, System.Net.Sockets.AddressFamily addressFamily)
         {
             ip = null;
-            if(!IPAddress.TryParse(tb.Text, out ip))
+            if (!IPAddress.TryParse(tb.Text, out ip) || (ip.AddressFamily != addressFamily))
             { 
                 MessageBox.Show(this, string.Format(Properties.Resources.ErrorInvalidX, name), Properties.Resources.TitleErrorInput, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 tb.Focus();
@@ -132,18 +154,47 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
         {
             IPAddress ip;
 
-            if (!CheckDecimalToIp(Properties.Resources.IpAddress          , textBoxIPAddress     , out ip)) return false;
+            if (!CheckStringToIpAddress(Properties.Resources.IpAddress          , textBoxIPv4IPAddress     , out ip, System.Net.Sockets.AddressFamily.InterNetwork)) return false;
             m_cfg.IpAddress = ip;
-            if (!CheckDecimalToIp(Properties.Resources.SubnetMask         , textBoxSubnetMask    , out ip)) return false;
+            if (!CheckStringToIpAddress(Properties.Resources.SubnetMask         , textBoxIPv4SubnetMask    , out ip, System.Net.Sockets.AddressFamily.InterNetwork)) return false;
             m_cfg.SubNetMask = ip;
-            if (!CheckDecimalToIp(Properties.Resources.DefaultGateway     , textBoxDefaultGateway, out ip)) return false;
+            if (!CheckStringToIpAddress(Properties.Resources.DefaultGateway     , textBoxIPv4DefaultGateway, out ip, System.Net.Sockets.AddressFamily.InterNetwork)) return false;
             m_cfg.Gateway = ip;
-            if (!CheckDecimalToIp(Properties.Resources.PrimaryDnsAddress  , textBoxDnsPrimary    , out ip)) return false;
+            if (!CheckStringToIpAddress(Properties.Resources.PrimaryDnsAddress  , textBoxIPv4DnsPrimary    , out ip, System.Net.Sockets.AddressFamily.InterNetwork)) return false;
             m_cfg.PrimaryDns = ip;
-            if (!CheckDecimalToIp(Properties.Resources.SecondaryDnsAddress, textBoxDnsSecondary  , out ip)) return false;
+            if (!CheckStringToIpAddress(Properties.Resources.SecondaryDnsAddress, textBoxIPv4DnsSecondary  , out ip, System.Net.Sockets.AddressFamily.InterNetwork)) return false;
             m_cfg.SecondaryDns = ip;
 
-            
+            if (m_cfg.EnableExtendedConfiguration && m_cfgExt.EnableIPv6)
+            {
+                if (!CheckStringToIpAddress(Properties.Resources.IpAddress          , textBoxIPv6IPAddress     , out ip, System.Net.Sockets.AddressFamily.InterNetworkV6)) return false;
+                m_cfgExt.IPv6IpAddress = ip;
+
+                byte subnetPrefixLength;
+                if (byte.TryParse(textBoxIPv6SubnetPrefixLength.Text, out subnetPrefixLength) && subnetPrefixLength <= 128)
+                {
+                    m_cfgExt.IPv6SubnetPrefixLength = subnetPrefixLength;
+                }
+                else
+                {
+                    MessageBox.Show(this, string.Format(Properties.Resources.ErrorInvalidX, Properties.Resources.SubnetPrefixLength), Properties.Resources.TitleErrorInput, MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    textBoxIPv6SubnetPrefixLength.Focus();
+                    textBoxIPv6SubnetPrefixLength.SelectAll();
+
+                    return false;
+                }
+
+                if (!CheckStringToIpAddress(Properties.Resources.DefaultGateway     , textBoxIPv6DefaultGateway, out ip, System.Net.Sockets.AddressFamily.InterNetworkV6)) return false;
+                m_cfgExt.IPv6Gateway = ip;
+                if (!CheckStringToIpAddress(Properties.Resources.PrimaryDnsAddress  , textBoxIPv6DnsPrimary    , out ip, System.Net.Sockets.AddressFamily.InterNetworkV6)) return false;
+                m_cfgExt.IPv6PrimaryDns = ip;
+                if (!CheckStringToIpAddress(Properties.Resources.SecondaryDnsAddress, textBoxIPv6DnsSecondary  , out ip, System.Net.Sockets.AddressFamily.InterNetworkV6)) return false;
+                m_cfgExt.IPv6SecondaryDns = ip;
+
+                m_cfgExt.EnableDhcpForIPv6IpAddress = radioButtonIPv6IPAddressDynamic.Checked;
+                m_cfgExt.EnableDhcpForIPv6DnsAddresses = radioButtonIPv6DnsAddressesDynamic.Checked;
+            }
 
             try
             {
@@ -159,7 +210,8 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
                 return false;
             }
 
-            m_cfg.EnableDhcp = checkBoxDHCPEnable.Checked;
+            m_cfg.EnableDhcpForIpAddress = radioButtonIPv4IPAddressDynamic.Checked;
+            m_cfg.EnableDhcpForDnsAddresses = radioButtonIPv4DnsAddressesDynamic.Checked;
 
             return true;
         }
@@ -234,6 +286,11 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
 
                 m_cfg.Save();
 
+                if (m_cfg.EnableExtendedConfiguration)
+                {
+                    m_cfgExt.Save();
+                }
+
                 this.DialogResult = DialogResult.OK;
             }
             catch (Exception e1)
@@ -268,15 +325,6 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
             {
                 m_cfgHelper.Dispose();
             }
-        }
-
-        private void checkBoxDHCPEnable_CheckedChanged(object sender, EventArgs e)
-        {
-            bool fEnable = checkBoxDHCPEnable.Checked;
-
-            textBoxDefaultGateway.Enabled = !fEnable;
-            textBoxIPAddress.Enabled      = !fEnable;
-            textBoxSubnetMask.Enabled     = !fEnable;
         }
 
         private void EnableWireless(bool enable)
@@ -347,5 +395,46 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
                 textBoxNetworkKey.Text = textBoxNetworkKey.Text.Substring(0, textBoxNetworkKey.MaxLength);
             }
         }
+
+        private void radioButtonIPv4IPAddressDynamic_CheckedChanged(object sender, EventArgs e)
+        {
+            bool fEnable = radioButtonIPv4IPAddressDynamic.Checked;
+
+            if (!fEnable)
+                radioButtonIPv4DnsAddressesStatic.Checked = true;
+
+            textBoxIPv4IPAddress.Enabled = !fEnable;
+            textBoxIPv4SubnetMask.Enabled = !fEnable;
+            textBoxIPv4DefaultGateway.Enabled = !fEnable;
+        }
+
+        private void radioButtonIPv4DnsAddressesDynamic_CheckedChanged(object sender, EventArgs e)
+        {
+            bool fEnable = radioButtonIPv4DnsAddressesDynamic.Checked;
+
+            textBoxIPv4DnsPrimary.Enabled = !fEnable;
+            textBoxIPv4DnsSecondary.Enabled = !fEnable;
+        }
+
+        private void radioButtonIPv6IPAddressDynamic_CheckedChanged(object sender, EventArgs e)
+        {
+            bool fEnable = radioButtonIPv6IPAddressDynamic.Checked;
+
+            if (!fEnable)
+                radioButtonIPv6DnsAddressesStatic.Checked = true;
+
+            textBoxIPv6IPAddress.Enabled = !fEnable;
+            textBoxIPv6SubnetPrefixLength.Enabled = !fEnable;
+            textBoxIPv6DefaultGateway.Enabled = !fEnable;
+        }
+
+        private void radioButtonIPv6DnsAddressesDynamic_CheckedChanged(object sender, EventArgs e)
+        {
+            bool fEnable = radioButtonIPv6DnsAddressesDynamic.Checked;
+
+            textBoxIPv6DnsPrimary.Enabled = !fEnable;
+            textBoxIPv6DnsSecondary.Enabled = !fEnable;
+        }
+
     }
 }
