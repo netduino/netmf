@@ -470,6 +470,7 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
             // radioButtonIPv4DnsAddressesDynamic
             // 
             this.radioButtonIPv4DnsAddressesDynamic.AutoSize = true;
+            this.radioButtonIPv4DnsAddressesDynamic.Enabled = false;
             this.radioButtonIPv4DnsAddressesDynamic.Location = new System.Drawing.Point(16, 9);
             this.radioButtonIPv4DnsAddressesDynamic.Name = "radioButtonIPv4DnsAddressesDynamic";
             this.radioButtonIPv4DnsAddressesDynamic.Size = new System.Drawing.Size(218, 17);
@@ -665,6 +666,7 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
             // radioButtonIPv6DnsAddressesDynamic
             // 
             this.radioButtonIPv6DnsAddressesDynamic.AutoSize = true;
+            this.radioButtonIPv6DnsAddressesDynamic.Enabled = false;
             this.radioButtonIPv6DnsAddressesDynamic.Location = new System.Drawing.Point(16, 9);
             this.radioButtonIPv6DnsAddressesDynamic.Name = "radioButtonIPv6DnsAddressesDynamic";
             this.radioButtonIPv6DnsAddressesDynamic.Size = new System.Drawing.Size(218, 17);

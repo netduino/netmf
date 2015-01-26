@@ -317,15 +317,14 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool.Engine
     public class MFNetworkConfigurationExtended
     {
         HAL_NetworkConfigurationExtended m_cfg = new HAL_NetworkConfigurationExtended();
-        MFConfigHelper m_cfgHelper;
+        internal MFConfigHelper m_cfgHelper;
+        const string c_CfgName = "NETWORKEXT";
 
         const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_IPADDR   = 1;
         const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_DHCPV6_DNSADDRS = 2;
         /* NOTE: IPv4-only == IPv4 stack; IPv6-only == IPv6 stack; IPv4 | IPv6 == Dual IPv4+IPv6 stack */
         const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV4_SUPPORTED = 4;
         const uint c_SOCK_NETWORKCONFIGURATION_FLAGS_IPV6_SUPPORTED  = 8;
-
-        const string c_CfgName = "NETWORKEXT";
 
         public MFNetworkConfigurationExtended(MFDevice dev)
         {

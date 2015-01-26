@@ -284,12 +284,13 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
                     }
                 }
 
-                m_cfg.Save();
-
                 if (m_cfg.EnableExtendedConfiguration)
                 {
                     m_cfgExt.Save();
+                    m_cfg.SwapConfigBuffer(m_cfgExt.m_cfgHelper);
                 }
+
+                m_cfg.Save();
 
                 this.DialogResult = DialogResult.OK;
             }
@@ -401,7 +402,14 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
             bool fEnable = radioButtonIPv4IPAddressDynamic.Checked;
 
             if (!fEnable)
+            {
+                radioButtonIPv4DnsAddressesDynamic.Enabled = false;
                 radioButtonIPv4DnsAddressesStatic.Checked = true;
+            }
+            else
+            {
+                radioButtonIPv4DnsAddressesDynamic.Enabled = true;
+            }
 
             textBoxIPv4IPAddress.Enabled = !fEnable;
             textBoxIPv4SubnetMask.Enabled = !fEnable;
@@ -421,7 +429,14 @@ namespace Microsoft.NetMicroFramework.Tools.MFDeployTool
             bool fEnable = radioButtonIPv6IPAddressDynamic.Checked;
 
             if (!fEnable)
+            {
+                radioButtonIPv6DnsAddressesDynamic.Enabled = false;
                 radioButtonIPv6DnsAddressesStatic.Checked = true;
+            }
+            else
+            {
+                radioButtonIPv6DnsAddressesDynamic.Enabled = true;
+            }
 
             textBoxIPv6IPAddress.Enabled = !fEnable;
             textBoxIPv6SubnetPrefixLength.Enabled = !fEnable;
