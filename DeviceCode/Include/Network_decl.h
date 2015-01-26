@@ -59,6 +59,32 @@ struct NETWORK_CONFIG
     static LPCSTR GetDriverName() { return "NETWORK"; }
 };
 
+struct SOCK_NetworkConfigurationExtended
+{  
+    /// Bits 0-31 regular flags.
+    UINT32 flags;
+
+    char  ipv6ipaddr[16];
+    UINT8 ipv6subnetprefixlen;
+    char  ipv6gateway[16];
+    char  ipv6dnsServer1[16];
+    char  ipv6dnsServer2[16];
+};
+
+struct NETWORK_CONFIG_EXTENDED
+{
+    HAL_DRIVER_CONFIG_HEADER Header;
+
+    //--//
+
+    int                               NetworkInterfaceCount;
+    SOCK_NetworkConfigurationExtended NetworkInterfaces[NETWORK_INTERFACE_COUNT];
+    
+    //--//
+
+    static LPCSTR GetDriverName() { return "NETWORKEXT"; }
+};
+
 #define WIRELESS_PASSPHRASE_LENGTH             64
 #define WIRELESS_NETWORKKEY_LENGTH             256
 #define WIRELESS_REKEYINTERNAL_LENGTH          32
