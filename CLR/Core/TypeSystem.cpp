@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "Core.h"
@@ -41,7 +42,11 @@ int s_CLR_RT_fTrace_Memory                     = TINYCLR_TRACE_DEFAULT(c_CLR_RT_
 #endif
 
 #if defined(TINYCLR_TRACE_MEMORY_STATS)
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+int s_CLR_RT_fTrace_MemoryStats                = TINYCLR_TRACE_DEFAULT(c_CLR_RT_Trace_None,c_CLR_RT_Trace_None);
+#else
 int s_CLR_RT_fTrace_MemoryStats                = TINYCLR_TRACE_DEFAULT(c_CLR_RT_Trace_Info,c_CLR_RT_Trace_Info);
+#endif
 #endif
 
 #if defined(TINYCLR_GC_VERBOSE)
@@ -1651,7 +1656,7 @@ HRESULT CLR_RT_Assembly::CreateInstance( const CLR_RECORD_ASSEMBLY* header, CLR_
         assm->Assembly_Initialize( offsets );
         
 #if !defined(BUILD_RTM)
-        CLR_Debug::Printf( "   Assembly: %s (%d.%d.%d.%d)  ", assm->m_szName, header->version.iMajorVersion, header->version.iMinorVersion, header->version.iBuildNumber, header->version.iRevisionNumber );
+        CLR_Debug::Printf( "Assembly: %s (%d.%d.%d.%d)\r\n", assm->m_szName, header->version.iMajorVersion, header->version.iMinorVersion, header->version.iBuildNumber, header->version.iRevisionNumber );
 
         if(s_CLR_RT_fTrace_AssemblyOverhead >= c_CLR_RT_Trace_Info)
         {
@@ -1668,6 +1673,9 @@ HRESULT CLR_RT_Assembly::CreateInstance( const CLR_RECORD_ASSEMBLY* header, CLR_
 
             CLR_Debug::Printf( " (%d RAM - %d ROM - %d METADATA)\r\n\r\n", iTotalRamSize, header->TotalSize(), iMetaData );
 
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+// to speed boot of Netduino, we do not print out this data...
+#else
             CLR_Debug::Printf( "   AssemblyRef    = %8d bytes (%8d elements)\r\n", offsets.iAssemblyRef   , skeleton->m_pTablesSize[ TBL_AssemblyRef ] );
             CLR_Debug::Printf( "   TypeRef        = %8d bytes (%8d elements)\r\n", offsets.iTypeRef       , skeleton->m_pTablesSize[ TBL_TypeRef     ] );
             CLR_Debug::Printf( "   FieldRef       = %8d bytes (%8d elements)\r\n", offsets.iFieldRef      , skeleton->m_pTablesSize[ TBL_FieldRef    ] );
@@ -1689,6 +1697,7 @@ HRESULT CLR_RT_Assembly::CreateInstance( const CLR_RECORD_ASSEMBLY* header, CLR_
             CLR_Debug::Printf( "   Signatures      = %8d bytes\r\n"                                                                                             , skeleton->m_pTablesSize[ TBL_Signatures     ] );
             CLR_Debug::Printf( "   ByteCode        = %8d bytes\r\n"                                                                                             , skeleton->m_pTablesSize[ TBL_ByteCode       ] );
             CLR_Debug::Printf( "\r\n\r\n" );
+#endif
         }
 #endif
     }
@@ -3825,6 +3834,9 @@ HRESULT CLR_RT_TypeSystem::ResolveAll()
 
             CLR_Debug::Printf( "\r\nTotal: (%d RAM - %d ROM - %d METADATA)\r\n\r\n", iTotalRamSize, iTotalRomSize, iMetaData );
 
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+// to speed boot of Netduino, we do not print out this data...
+#else
             CLR_Debug::Printf( "   AssemblyRef    = %8d bytes (%8d elements)\r\n", offsets.iAssemblyRef   , pTablesSize[TBL_AssemblyRef] );
             CLR_Debug::Printf( "   TypeRef        = %8d bytes (%8d elements)\r\n", offsets.iTypeRef       , pTablesSize[TBL_TypeRef    ] );
             CLR_Debug::Printf( "   FieldRef       = %8d bytes (%8d elements)\r\n", offsets.iFieldRef      , pTablesSize[TBL_FieldRef   ] );
@@ -3853,6 +3865,7 @@ HRESULT CLR_RT_TypeSystem::ResolveAll()
             CLR_Debug::Printf( "   Signatures      = %8d bytes\r\n"                                                                                      , pTablesSize[ TBL_Signatures     ] );
             CLR_Debug::Printf( "   ByteCode        = %8d bytes\r\n"                                                                                      , pTablesSize[ TBL_ByteCode       ] );
             CLR_Debug::Printf( "\r\n\r\n" );
+#endif
         }
     }
 

@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <tinyhal.h>
@@ -364,7 +365,7 @@ BOOL SD_BS_Driver::ChipInitialize(void *context)
         
         // send CMD16, set block length to 512
 #ifdef SD_DEBUG
-        debug_printf" SD SendCmdWithR1Resp: SD_SET_BLOCKLEN[512] -> R1_IN_READY_STATUS\r\n");
+        debug_printf(" SD SendCmdWithR1Resp: SD_SET_BLOCKLEN[512] -> R1_IN_READY_STATUS\r\n");
 #endif
 
         response = SD_SendCmdWithR1Resp(SD_SET_BLOCKLEN, 512, 0xFF, R1_IN_READY_STATUS);
@@ -762,7 +763,11 @@ BOOL SD_BS_Driver::SD_Set_In_READY_STATUS(BOOL isHC_XC_Supported)
     int i;
     BYTE response; 
     
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo)
+    for(i=0; i<0x3ff; i++)
+#else
     for(i=0; i<0x7fff; i++)
+#endif
     {
         //send CMD55 + ACMD41 until return 0x00 for type 1 cards
         SD_SendCmdWithR1Resp(SD_APP_CMD, 0, 0xFF, R1_IN_IDLE_STATUS);

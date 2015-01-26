@@ -1,8 +1,19 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <tinyhal.h>
+#if defined(PLATFORM_ARM_Netduino2)
+#include "..\..\Solutions\Netduino2\DeviceCode\DeploymentTransport\DeploymentTransport.h"
+#elif defined(PLATFORM_ARM_NetduinoPlus2)
+#include "..\..\Solutions\NetduinoPlus2\DeviceCode\DeploymentTransport\DeploymentTransport.h"
+#elif defined(PLATFORM_ARM_NetduinoGo)
+#include "..\..\Solutions\NetduinoGo\DeviceCode\DeploymentTransport\DeploymentTransport.h"
+#elif defined(PLATFORM_ARM_NetduinoShieldBase)
+#include "..\..\Solutions\NetduinoShieldBase\DeviceCode\DeploymentTransport\DeploymentTransport.h"
+#endif
+
 
 #if !defined(__GNUC__)
 #include <rt_fp.h>
@@ -380,6 +391,10 @@ void HAL_Initialize()
 
     FileSystemVolumeList::InitializeVolumes();
 
+#if defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase)
+	DeploymentTransport_Initialize();
+#endif
+
     LCD_Initialize();
     
 #if !defined(HAL_REDUCESIZE)
@@ -540,6 +555,72 @@ void BootEntry()
 
 
     CPU_Initialize();
+
+#if defined(PLATFORM_ARM_NetduinoGo)
+	// put all socket select pins in "input mode, pullup enabled"
+	CPU_GPIO_EnableInputPin(0x1B, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 1
+	CPU_GPIO_EnableInputPin(0x2B, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 2
+	CPU_GPIO_EnableInputPin(0x04, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 3
+	CPU_GPIO_EnableInputPin(0x08, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 4
+	CPU_GPIO_EnableInputPin(0x10, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 5
+	CPU_GPIO_EnableInputPin(0x11, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 6
+	CPU_GPIO_EnableInputPin(0x32, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 7
+	CPU_GPIO_EnableInputPin(0x1C, FALSE, NULL, GPIO_INT_NONE, RESISTOR_PULLUP); // goport 8
+
+#if FALSE // enable this section of code to use pre-release networking on goport 4
+	// turn on goport 4 (for the networking module) via the 595 shift register
+	// NOTE: this is a temporary operation; we'll replace this will runtime initialization of networking
+	int shift_clk = 42;
+	int shift_mosi = 21;
+	int shift_outputenable = 10;
+	int shift_cs = 18;
+
+	CPU_GPIO_EnableOutputPin(shift_clk, FALSE);
+	CPU_GPIO_EnableOutputPin(shift_mosi, FALSE);
+	CPU_GPIO_EnableOutputPin(shift_outputenable, TRUE);
+	CPU_GPIO_EnableOutputPin(shift_cs, FALSE);
+
+	int goPortToTurnOn = 4; // turn on goport #4
+	int numGoPorts = 8; // total goport count = 8
+	int iGoPort = 0;
+	int iClockPause = 0;
+	int iCount = 0;
+	for (iGoPort = 0; iGoPort < numGoPorts; iGoPort++)
+	{
+    	CPU_GPIO_EnableOutputPin(shift_cs, FALSE);
+
+		if ((numGoPorts - iGoPort) == goPortToTurnOn)
+	    	CPU_GPIO_EnableOutputPin(shift_mosi, TRUE);
+		else
+	    	CPU_GPIO_EnableOutputPin(shift_mosi, FALSE);
+
+		CPU_GPIO_EnableOutputPin(shift_clk, TRUE);
+		for (iClockPause = 0; iClockPause < 1000; iClockPause++)
+			iCount++;
+			
+		CPU_GPIO_EnableOutputPin(shift_clk, FALSE);
+		for (iClockPause = 0; iClockPause < 1000; iClockPause++)
+			iCount++;
+
+		CPU_GPIO_EnableOutputPin(shift_cs, TRUE);
+		for (iClockPause = 0; iClockPause < 1000; iClockPause++)
+			iCount++;
+	}
+
+	// enable shift register output
+	CPU_GPIO_EnableOutputPin(shift_outputenable, FALSE);
+#endif
+
+        // turn on GoPort LEDs
+        CPU_GPIO_EnableOutputPin(22, TRUE); // LED_GOPORT1
+        CPU_GPIO_EnableOutputPin(23, TRUE); // LED_GOPORT2
+        CPU_GPIO_EnableOutputPin(24, TRUE); // LED_GOPORT3
+        CPU_GPIO_EnableOutputPin(25, TRUE); // LED_GOPORT4
+        CPU_GPIO_EnableOutputPin(38, TRUE); // LED_GOPORT5
+        CPU_GPIO_EnableOutputPin(39, TRUE); // LED_GOPORT6
+        CPU_GPIO_EnableOutputPin(40, TRUE); // LED_GOPORT7
+        CPU_GPIO_EnableOutputPin(41, TRUE); // LED_GOPORT8
+#endif
 
     HAL_Time_Initialize();
 

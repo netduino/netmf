@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1683,7 +1684,14 @@ CLR_RT_HeapBlock* CLR_RT_ExecutionEngine::ExtractHeapBlocks( CLR_RT_DblLinkedLis
 
         default: // Total failure...
 #if !defined(BUILD_RTM)
+#if defined(TINYCLR_TRACE_MEMORY_STATS) && (defined(PLATFORM_ARM_Netduino2) || defined(PLATFORM_ARM_NetduinoPlus2) || defined(PLATFORM_ARM_NetduinoGo) || defined(PLATFORM_ARM_NetduinoShieldBase))
+    if(s_CLR_RT_fTrace_MemoryStats >= c_CLR_RT_Trace_Info)
+    {
+            CLR_Debug::Printf( "Could not allocate %d blocks, %d bytes. Compacting memory.\r\n\r\n", length, length * sizeof(CLR_RT_HeapBlock) );
+    }
+#else
             CLR_Debug::Printf( "Failed allocation for %d blocks, %d bytes\r\n\r\n", length, length * sizeof(CLR_RT_HeapBlock) );
+#endif
 #endif
             if(g_CLR_RT_GarbageCollector.m_freeBytes >= (length * sizeof(CLR_RT_HeapBlock)))
             {

@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) Microsoft Corporation.  All rights reserved.
+// Portions Copyright (c) Secret Labs LLC.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "CLRStartup.h"
@@ -658,6 +659,29 @@ void ClrStartup( CLR_SETTINGS params )
             {
 #if !defined(BUILD_RTM)
                 CLR_Debug::Printf( "Ready.\r\n" );
+#endif
+
+#if defined(PLATFORM_ARM_NetduinoGo)
+        // turn off socket LEDs when TinyCLR has booted
+        CPU_GPIO_EnableOutputPin(22, FALSE); // LED_GOPORT1
+        CPU_GPIO_EnableOutputPin(23, FALSE); // LED_GOPORT2
+        CPU_GPIO_EnableOutputPin(24, FALSE); // LED_GOPORT3
+        CPU_GPIO_EnableOutputPin(25, FALSE); // LED_GOPORT4
+        CPU_GPIO_EnableOutputPin(38, FALSE); // LED_GOPORT5
+        CPU_GPIO_EnableOutputPin(39, FALSE); // LED_GOPORT6
+        CPU_GPIO_EnableOutputPin(40, FALSE); // LED_GOPORT7
+        CPU_GPIO_EnableOutputPin(41, FALSE); // LED_GOPORT8 // turn on to illustrate networking GoPort
+		
+        // enable SW1 to act as a GPIO by default
+        CPU_GPIO_EnableOutputPin(47, TRUE); // /SW1_CTRL_OF_RESET: SW1 should not default to /NRST
+#endif
+#if defined(STM32_GPIO_USER_LED)
+        // turn off LED when TinyCLR has booted
+        CPU_GPIO_EnableOutputPin(STM32_GPIO_USER_LED, FALSE); // ONBOARD_LED
+#endif
+#if defined(STM32_GPIO_RESET_BTN)
+        // enable BTN as reset button after TinyCLR has booted; un-reserving the pin will trigger it to switch to reset mode
+        CPU_GPIO_ReservePin(STM32_GPIO_RESET_BTN, FALSE);
 #endif
 
 #if defined(PLATFORM_WINDOWS)
